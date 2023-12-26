@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.provisioning.UserDetailsManager;
@@ -54,7 +53,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void updPass(NewPassword newPassword) {
         logger.info("Hi in UserService in updPass()");
-        userDetailsManager.changePassword(newPassword.getCurrentPassword(), newPassword.getNewPassword());  //Я так понимаю, JDBC менеджер сам сохраняет
+        userDetailsManager.changePassword(newPassword.getCurrentPassword(), newPassword.getNewPassword());
     }
     
     @Override
