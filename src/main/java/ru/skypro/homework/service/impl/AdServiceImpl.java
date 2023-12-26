@@ -84,7 +84,7 @@ public class AdServiceImpl implements AdService {
         AdEntity result;
         result = mapper.dtoToAd(ad);
         result.setImage(uploadImageHandler(image));
-        result.setAuthor(userRepository.findByLogin(getMe()));
+        result.setAuthor(userRepository.findByLogin(getMe()).get());
         return mapper.adToDto(repository.save(result));
     }
 
@@ -123,7 +123,7 @@ public class AdServiceImpl implements AdService {
 
     @Override
     public Ads getAllAdsForUser() {
-        return mapper.adToDtoList(repository.findAdEntitiesByAuthor(userRepository.findByLogin(getMe())));
+        return mapper.adToDtoList(repository.findAdEntitiesByAuthor(userRepository.findByLogin(getMe()).get()));
     }
 
     @Override

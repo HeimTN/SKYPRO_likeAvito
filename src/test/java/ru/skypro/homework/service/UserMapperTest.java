@@ -13,7 +13,7 @@ import java.util.List;
 class UserMapperTest {
     private static UserMapper mapper;
 
-    private static UserEntity source = new UserEntity(1, "lolka@bolka.ru", "ya.ru/kartinka", "Lolek", "Bolek", "88005553535", Role.USER, "ASD", List.of(new AdEntity(), new AdEntity()));
+    private static UserEntity source = new UserEntity(1, "lolka@bolka.ru", "ya.ru/kartinka", "Lolek", "Bolek", "88005553535", Role.USER, "Qwerty123", List.of(new AdEntity(), new AdEntity()));
     private static User sourceDTO = new User(1, "lolka@bolka.ru", "Lolek", "Bolek", "88005553535", Role.USER.name(), "ya.ru/kartinka");
 
 

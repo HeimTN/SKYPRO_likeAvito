@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,13 +37,16 @@ public class UserServiceImpl implements UserService {
     private final UserDetailsManager userDetailsManager;
 
     @Value("${path.to.image.folder}")
-    String path;
+    private static String path;
 
 
     public UserEntity getMe() {
 
         UserDetails user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return userRepo.findByLogin(user.getUsername());
+        if (user != null && user.getUsername() != null) {
+            return userRepo.findByLogin(user.getUsername()).orElseThrow(() -> new UsernameNotFoundException("No user in database found: " + user.getUsername()));
+        }
+        throw new UsernameNotFoundException("No such user");
     }
 
     @Override
