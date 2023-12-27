@@ -8,10 +8,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import ru.skypro.homework.dto.Comment;
 import ru.skypro.homework.dto.Comments;
 import ru.skypro.homework.dto.CreateOrUpdateComment;
+import ru.skypro.homework.dto.User;
 import ru.skypro.homework.service.CommentService;
 import ru.skypro.homework.service.impl.AuthServiceImpl;
 import ru.skypro.homework.service.impl.CommentServiceImpl;
@@ -90,8 +94,8 @@ public class CommentController {
             tags = "Comments"
     )
     @PostMapping("/{id}/comments")
-    public ResponseEntity<Comment> addComment(@Valid @RequestBody CreateOrUpdateComment createOrUpdateComment, @Parameter(description = "Ad id") @PathVariable Integer id) {
-        Comment comment = commentService.createComment(createOrUpdateComment, id);
+    public ResponseEntity<Comment> addComment(@Valid @RequestBody CreateOrUpdateComment createOrUpdateComment, @Parameter(description = "Ad id") @PathVariable Integer id, Authentication authentication) {
+        Comment comment = commentService.createComment(createOrUpdateComment, id, authentication);
         return ResponseEntity.status(200).body(comment);
     }
 
@@ -161,12 +165,13 @@ public class CommentController {
             },
             tags = "Comments"
     )
+    @PreAuthorize(value = "hasRole('ADMIN') or @commentServiceImpl.getUserName().equals(authentication.getName())")
     @PatchMapping("/{adId}/comments/{commentId}")
     public ResponseEntity<Comment> updateComment(@Parameter(description = "Ad id") @PathVariable Integer adId,
                                                  @Parameter(description = "Comment id") @PathVariable Integer commentId,
-                                                 @RequestBody @Valid CreateOrUpdateComment createOrUpdateComment) {
+                                                 @RequestBody CreateOrUpdateComment createOrUpdateComment, Authentication authentication) {
        logger.info("Request to change comment in Ad id:{}, comment id:{}, text:{}", adId, commentId, createOrUpdateComment.getText());
-        Comment comment = commentService.updateComment(adId,commentId,createOrUpdateComment);
+        Comment comment = commentService.updateComment(adId,commentId,createOrUpdateComment, authentication);
         return ResponseEntity.status(200).body(comment);
     }
 }
