@@ -1,15 +1,29 @@
 package ru.skypro.homework.service.impl;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import ru.skypro.homework.dto.Ad;
-import ru.skypro.homework.dto.Ads;
-import ru.skypro.homework.dto.CreateOrUpdateAd;
-import ru.skypro.homework.dto.ExtendedAd;
+import org.springframework.web.multipart.MultipartFile;
+import ru.skypro.homework.dto.*;
 import ru.skypro.homework.model.AdEntity;
 import ru.skypro.homework.repo.AdRepository;
 import ru.skypro.homework.repo.UserRepo;
 import ru.skypro.homework.service.AdMapper;
 import ru.skypro.homework.service.AdService;
+import ru.skypro.homework.util.exceptions.FileNotFoundException;
+import ru.skypro.homework.util.exceptions.NotFoundException;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collection;
+
+
 /**
  * Класс {@code AdServiceImpl} предоставляет реализацию интерфейса {@link AdService},
  * предоставляя функциональность для управления рекламными объявлениями в системе.
@@ -46,6 +60,9 @@ public class AdServiceImpl implements AdService {
     private final UserRepo userRepository;
     private final AdMapper mapper;
 
+    @Value("${path.to.image.folder}")
+    private String uploadDir;
+
     public AdServiceImpl(AdRepository repository, AdMapper mapper, UserRepo userRepository){
         this.repository = repository;
         this.mapper = mapper;
@@ -55,15 +72,19 @@ public class AdServiceImpl implements AdService {
 
     @Override
     public Ads getAllAds() {
-        return mapper.adToDtoList(repository.findAll());
+        Collection<AdEntity> result = repository.findAll();
+        if(result.isEmpty()){
+            throw new NotFoundException("Обьявления не найдены");
+        }
+        return mapper.adToDtoList(result);
     }
 
     @Override
-    public Ad createAd(CreateOrUpdateAd ad, String image, Integer userId) {
+    public Ad createAd(CreateOrUpdateAd ad, MultipartFile image) {
         AdEntity result;
         result = mapper.dtoToAd(ad);
-        result.setImage(image);
-        result.setAuthor(userRepository.findById(userId).orElse(null));
+        result.setImage(uploadImageHandler(image));
+        result.setAuthor(userRepository.findByLogin(getMe()));
         return mapper.adToDto(repository.save(result));
     }
 
@@ -76,6 +97,7 @@ public class AdServiceImpl implements AdService {
         return mapper.adToExtDto(result);
     }
 
+    @PostAuthorize("returnObject.author == principal.username or hasRole('ADMIN')")
     @Override
     public Ad deleteAd(Integer id) {
         AdEntity result = repository.findById(id).orElse(null);
@@ -86,6 +108,7 @@ public class AdServiceImpl implements AdService {
         return mapper.adToDto(result);
     }
 
+    @PostAuthorize("returnObject.author == principal.username or hasRole('ADMIN')")
     @Override
     public Ad pathAd(CreateOrUpdateAd ad, Integer id) {
         AdEntity result = repository.findById(id).orElse(null);
@@ -99,18 +122,51 @@ public class AdServiceImpl implements AdService {
     }
 
     @Override
-    public Ads getAllAdsForUser(Integer userId) {
-        return mapper.adToDtoList(repository.findAdEntitiesByAuthor(userRepository.findById(userId).orElse(null)));
+    public Ads getAllAdsForUser() {
+        return mapper.adToDtoList(repository.findAdEntitiesByAuthor(userRepository.findByLogin(getMe())));
     }
 
     @Override
-    public String pathImageAd(Integer id, String image) {
+    public MultipartFile pathImageAd(Integer id, MultipartFile image) {
         AdEntity result = repository.findById(id).orElse(null);
         if(result == null){
             return null;
         }
-        result.setImage(image);
-        repository.save(result);
-        return result.getImage();
+        if(result.getAuthor().getLogin().equals(getMe()) || result.getAuthor().getRole().equals(Role.ADMIN)) {
+            result.setImage(uploadImageHandler(image));
+            repository.save(result);
+            return image;
+        }
+        throw new AccessDeniedException("Нет доступа");
+    }
+
+
+    private String getMe(){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication.getName();
+    }
+
+    private String uploadImageHandler(MultipartFile image){
+        if(image.isEmpty()){
+            throw new FileNotFoundException("Изображение для загрузки не найдено");
+        }
+        try{
+            Path projectDir = Paths.get("").toAbsolutePath();
+            Path uploadPath = Paths.get(projectDir.toString(), uploadDir);
+            if(!Files.exists(uploadPath)){
+                Files.createDirectories(uploadPath);
+            }
+            try(var inputStream = image.getInputStream()){
+                Path filePath = uploadPath.resolve(image.getOriginalFilename());
+                while(Files.exists(filePath)){
+                    filePath = uploadPath.resolve(filePath.getParent()+"/"+1+filePath.getFileName());
+                }
+                Files.copy(inputStream, filePath);
+                return filePath.toString();
+            }
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+        throw new RuntimeException("AdServiceImpl in uploadFileHandler: unexpected error");
     }
 }
