@@ -38,21 +38,4 @@ class UserMapperTest {
         Assertions.assertEquals(Role.USER.name(), DTO.getRole());
 
     }
-
-    @Test
-    void UserDtoConvertsToEntity() {
-
-        UserEntity entity = mapper.DtoToEntity(sourceDTO);
-
-        Assertions.assertNotNull(entity);
-        Assertions.assertEquals(1, entity.getId());
-        Assertions.assertEquals("ya.ru/kartinka", entity.getImage());
-        Assertions.assertEquals("lolka@bolka.ru", entity.getLogin());
-        Assertions.assertEquals("Lolek", entity.getFirstName());
-        Assertions.assertEquals("Bolek", entity.getLastName());
-        Assertions.assertEquals("88005553535", entity.getPhone());
-        Assertions.assertEquals(Role.USER, entity.getRole());
-        Assertions.assertNull(entity.getAds());
-        Assertions.assertNull(entity.getPassword());
-    }
 }

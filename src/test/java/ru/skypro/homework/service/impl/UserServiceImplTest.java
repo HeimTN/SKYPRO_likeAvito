@@ -4,9 +4,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ContextConfiguration;
@@ -16,14 +14,15 @@ import ru.skypro.homework.dto.User;
 import ru.skypro.homework.model.AdEntity;
 import ru.skypro.homework.model.UserEntity;
 import ru.skypro.homework.repo.UserRepo;
+import ru.skypro.homework.service.ImageService;
 import ru.skypro.homework.service.UserMapper;
 
-import javax.persistence.OrderBy;
 import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mockingDetails;
+import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @ContextConfiguration
@@ -34,6 +33,8 @@ class UserServiceImplTest {
     @Mock
     UserRepo userRepo;
     @Mock
+    ImageService imageService;
+    @Mock
     UserMapper userMapper;
     @Mock
     UserDetailsManager userDetailsManager;
@@ -42,6 +43,10 @@ class UserServiceImplTest {
     UserEntity exampleEntity = new UserEntity(1, "lolka@bolka.ru", "ya.ru/kartinka", "Lolek", "Bolek", "88005553535", Role.USER, "Qwerty123", List.of(new AdEntity(), new AdEntity()));
     User exampleDTO = new User(1, "lolka@bolka.ru", "Lolek", "Bolek", "88005553535", Role.USER.name(), "ya.ru/kartinka");
 
+    @BeforeEach
+    void setUp() {
+        userService = new UserServiceImpl(userRepo, userMapper, imageService, userDetailsManager);
+    }
 
     @Test
     @Order(0)
@@ -54,14 +59,14 @@ class UserServiceImplTest {
     @Order(1)
     void getMeReturnsUserEntity() {
 
-      //  when(userRepo.findByLogin(anyString())).thenReturn(Optional.of(exampleEntity));
+        when(userRepo.findByLogin(anyString())).thenReturn(Optional.of(exampleEntity));
 
-       // UserEntity user = userService.getMe();
+        UserEntity user = userService.getMe();
 
-       // System.err.println(userService);
-       // System.err.println(user);
+        System.err.println(userService);
+        System.err.println(user);
 
-     //   Assertions.assertInstanceOf(UserEntity.class, user);
+        Assertions.assertInstanceOf(UserEntity.class, user);
     }
 
     @Test
