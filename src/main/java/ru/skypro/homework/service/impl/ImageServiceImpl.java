@@ -2,6 +2,7 @@ package ru.skypro.homework.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -24,31 +25,45 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 @Service
 @RequiredArgsConstructor
 public class ImageServiceImpl implements ImageService {
-    private UserDetails user;
+
     private final UserRepo userRepo;
     private final ImgaeRepo imgaeRepo;
     private final ImageMapper imageMapper;
+    @Value("${path.to.image.folder}")
+    private String pathFolder;
 
     @Override
-    public void uploadImage(MultipartFile image, Path imagePath) throws IOException {
+    public void uploadImage(MultipartFile image, String pt) {
 
-        if (image == null || imagePath == null) {
+        if (image == null || pt == null) {
             return;
         }
 
-        Files.createDirectories(imagePath.getParent());
-        Files.deleteIfExists(imagePath);
+        Path imagePath = Path.of(pathFolder, pt);
+
+        try {
+            Files.createDirectories(imagePath.getParent());
+            Files.deleteIfExists(imagePath);
+        } catch (IOException e) {
+            throw new RuntimeException("Error writing file");
+        }
+
         try (InputStream is = image.getInputStream();
              OutputStream os = Files.newOutputStream(imagePath, CREATE_NEW);
              BufferedInputStream bis = new BufferedInputStream(is, 1024);
              BufferedOutputStream bos = new BufferedOutputStream(os, 1024)) {
+
+
             bis.transferTo(bos);
+        } catch (IOException e) {
+            throw new RuntimeException("Error writing file");
         }
-        user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        UserDetails user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         ImageEntity entityToSave = new ImageEntity();
-        entityToSave.setFilePath(imagePath.toString());
-        entityToSave.setFileSize(image.getBytes().length);
+        entityToSave.setFilePath(pt);
+        entityToSave.setFileSize((int) image.getSize());
         entityToSave.setMediaType(image.getContentType());
         entityToSave.setOwner(userRepo.findByLogin(user.getUsername()).orElseThrow(() -> new UsernameNotFoundException("User is not registered")));
 
@@ -56,14 +71,17 @@ public class ImageServiceImpl implements ImageService {
     }
 
     @Override
-    public byte[] getImageFromDisk(String path) throws IOException {
+    public byte[] getImageFromDisk(String path) {
+        String pathPrefixed = pathFolder + path;
         ImageEntity image = imgaeRepo.findById(path).orElseThrow(() -> new NotFoundException("No image found with path " + path));
 
         byte[] resultImage = new byte[image.getFileSize()];
 
-        InputStream is = Files.newInputStream(Path.of(path));
-        IOUtils.readFully(is, resultImage);
-
+        try (InputStream is = Files.newInputStream(Path.of(pathPrefixed))) {
+            IOUtils.readFully(is, resultImage);
+        } catch (IOException e) {
+            throw new RuntimeException("Error reading file");
+        }
         return resultImage;
     }
 

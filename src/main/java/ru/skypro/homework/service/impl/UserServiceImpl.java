@@ -1,10 +1,8 @@
 package ru.skypro.homework.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -15,21 +13,17 @@ import ru.skypro.homework.controller.UserController;
 import ru.skypro.homework.dto.NewPassword;
 import ru.skypro.homework.dto.UpdateUser;
 import ru.skypro.homework.dto.User;
-
-import ru.skypro.homework.model.ImageEntity;
 import ru.skypro.homework.model.UserEntity;
 import ru.skypro.homework.repo.UserRepo;
 import ru.skypro.homework.service.ImageService;
 import ru.skypro.homework.service.UserMapper;
 import ru.skypro.homework.service.UserService;
+import ru.skypro.homework.util.Constants;
+import ru.skypro.homework.util.exceptions.NotFoundException;
 
-import java.io.*;
-import java.net.URLEncoder;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.Objects;
 
 import static com.datical.liquibase.ext.init.InitProjectUtil.getExtension;
-import static java.nio.file.StandardOpenOption.CREATE_NEW;
 @Service
 @RequiredArgsConstructor
 public class  UserServiceImpl implements UserService {
@@ -40,10 +34,6 @@ public class  UserServiceImpl implements UserService {
     private final ImageService imageService;
 
     private final UserDetailsManager userDetailsManager;
-
-    @Value("${path.to.image.folder}")
-    private String pathFolder;
-
 
     public UserEntity getMe() {
 
@@ -56,7 +46,9 @@ public class  UserServiceImpl implements UserService {
 
     @Override
     public User getMeDTO() {
-        return userMapper.UserEntityToDTO(getMe());
+        UserEntity me = getMe();
+        me.setImage(Constants.IMAGES_URL + me.getImage()); //Для того, что бы достать картинку по ссылке нужно к ней приклеить префикс (URL).
+        return userMapper.UserEntityToDTO(me);
     }
 
     @Override
@@ -68,7 +60,7 @@ public class  UserServiceImpl implements UserService {
     @Override
     public UpdateUser updUsr(UpdateUser updateUser) {
         int id = getMe().getId();
-        UserEntity user = userRepo.getById(id);
+        UserEntity user = userRepo.findById(id).orElseThrow(() -> new NotFoundException("No user with id " + id));
 
         user.setFirstName(updateUser.getFirstName());
         user.setLastName(updateUser.getLastName());
@@ -80,7 +72,7 @@ public class  UserServiceImpl implements UserService {
     }
 
     @Override
-    public void updPhoto(MultipartFile photo) throws IOException {
+    public void updPhoto(MultipartFile photo) {
         UserEntity user = getMe();
         user.setImage(savePhoto(photo));
 
@@ -94,10 +86,9 @@ public class  UserServiceImpl implements UserService {
      * Generates unique path for user picture and saves it via ImageService
      * @param photo photo file
      * @return path to photo at the HDD
-     * @throws IOException
      * @see ImageServiceImpl
      */
-    public String savePhoto(MultipartFile photo) throws IOException{
+    public String savePhoto(MultipartFile photo){
         if(photo == null){
             return null;
         }
@@ -107,14 +98,11 @@ public class  UserServiceImpl implements UserService {
             return null;
         }
 
-        Path filePath = Path.of(pathFolder, "user_" + user.getId() + "_avatar" + "." + getExtension(photo.getOriginalFilename()));
+        String filePath = "user_" + user.getId() + "_avatar" + "." + getExtension(Objects.requireNonNull(photo.getOriginalFilename()));
 
         imageService.uploadImage(photo, filePath);
-        return filePath.toString();
+        return filePath;
     }
 
-    public byte[] getPhoto() {
-        return null;
-    }
 }
 

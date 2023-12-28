@@ -22,15 +22,6 @@ public interface UserMapper {
     User UserEntityToDTO(UserEntity user);
 
 
-/*    *//**
-     *
-     * @param user UserDTO
-     * @return User entity with null password, login and ads
-     *//*
-    @Mapping(source = "email", target = "login")
-    @Mapping(target = "image", expression = "java(")
-    UserEntity DtoToEntity(User user);*/
-
 
 
 
