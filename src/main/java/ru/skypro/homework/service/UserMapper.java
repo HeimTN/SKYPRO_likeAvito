@@ -17,17 +17,20 @@ public interface UserMapper {
      */
     @Mappings({
             @Mapping(source = "login", target = "email"),
-            @Mapping(target = "id", expression = "java(user.getId().intValue())")
+            @Mapping(target = "id", expression = "java(user.getId().intValue())"),
+            @Mapping(target = "image", expression = "java(String.valueOf(user.getImage().getId()))")
     })
     User UserEntityToDTO(UserEntity user);
 
-    /**
+
+/*    *//**
      *
      * @param user UserDTO
      * @return User entity with null password, login and ads
-     */
+     *//*
     @Mapping(source = "email", target = "login")
-    UserEntity DtoToEntity(User user);
+    @Mapping(target = "image", expression = "java(")
+    UserEntity DtoToEntity(User user);*/
 
 
 

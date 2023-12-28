@@ -14,6 +14,8 @@ import ru.skypro.homework.repo.UserRepo;
 import ru.skypro.homework.util.exceptions.InCorrectPasswordException;
 import ru.skypro.homework.util.exceptions.NotFoundException;
 
+import java.util.Optional;
+
 public class CustomUserDetailsService implements UserDetailsManager {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomUserDetailsService.class);
@@ -95,7 +97,7 @@ public class CustomUserDetailsService implements UserDetailsManager {
 
     @Override
     public boolean userExists(String username) {
-        UserEntity check = userRepo.findByLogin(username).get();
-        return check != null;
+        Optional<UserEntity> check = userRepo.findByLogin(username);
+        return check.isPresent();
     }
 }
