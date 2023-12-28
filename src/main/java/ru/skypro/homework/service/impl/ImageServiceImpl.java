@@ -30,10 +30,10 @@ public class ImageServiceImpl implements ImageService {
     private final ImageMapper imageMapper;
 
     @Override
-    public ImageEntity uploadImage(MultipartFile image, Path imagePath) throws IOException {
+    public void uploadImage(MultipartFile image, Path imagePath) throws IOException {
 
         if (image == null || imagePath == null) {
-            return null;
+            return;
         }
 
         Files.createDirectories(imagePath.getParent());
@@ -52,7 +52,7 @@ public class ImageServiceImpl implements ImageService {
         entityToSave.setMediaType(image.getContentType());
         entityToSave.setOwner(userRepo.findByLogin(user.getUsername()).orElseThrow(() -> new UsernameNotFoundException("User is not registered")));
 
-        return imgaeRepo.save(entityToSave);
+        imgaeRepo.save(entityToSave);
     }
 
     @Override

@@ -9,8 +9,6 @@ import javax.persistence.*;
 @Table(name = "images")
 public class ImageEntity {
     @Id
-    @Column(name = "id")
-    private int id;
     @Column(name = "path")
     private String filePath;
     @Column(name = "size")

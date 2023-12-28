@@ -89,8 +89,7 @@ Drop TYPE user_role;
 -- changeSet vasyanpupkin:3
 create TABLE images
 (
-    id         INTEGER PRIMARY KEY,
-    path       TEXT,
+    path       TEXT PRIMARY KEY,
     size       INTEGER,
     media_type VARCHAR(100) NOT NULL,
     related_ad INTEGER,

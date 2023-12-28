@@ -97,7 +97,7 @@ public class  UserServiceImpl implements UserService {
      * @throws IOException
      * @see ImageServiceImpl
      */
-    public ImageEntity savePhoto(MultipartFile photo) throws IOException{
+    public String savePhoto(MultipartFile photo) throws IOException{
         if(photo == null){
             return null;
         }
@@ -109,7 +109,8 @@ public class  UserServiceImpl implements UserService {
 
         Path filePath = Path.of(pathFolder, "user_" + user.getId() + "_avatar" + "." + getExtension(photo.getOriginalFilename()));
 
-        return imageService.uploadImage(photo, filePath);
+        imageService.uploadImage(photo, filePath);
+        return filePath.toString();
     }
 
     public byte[] getPhoto() {

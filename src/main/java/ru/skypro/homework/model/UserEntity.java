@@ -22,9 +22,7 @@ public class UserEntity {
      * login = email
      */
     private String login;
-    @OneToOne
-
-    private ImageEntity image;
+    private String image;
     @Column(name = "first_name")
     private String firstName;
     @Column(name = "last_name")

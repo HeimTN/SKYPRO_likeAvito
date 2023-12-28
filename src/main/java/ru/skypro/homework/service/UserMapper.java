@@ -17,8 +17,7 @@ public interface UserMapper {
      */
     @Mappings({
             @Mapping(source = "login", target = "email"),
-            @Mapping(target = "id", expression = "java(user.getId().intValue())"),
-            @Mapping(target = "image", expression = "java(String.valueOf(user.getImage().getId()))")
+            @Mapping(target = "id", expression = "java(user.getId().intValue())")
     })
     User UserEntityToDTO(UserEntity user);
 

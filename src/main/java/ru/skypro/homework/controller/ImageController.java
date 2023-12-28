@@ -31,21 +31,20 @@ public class ImageController {
     private final ImageService imageService;
 
 
-    @GetMapping(value = "/images/{image}", produces = {MediaType.IMAGE_PNG_VALUE, MediaType.IMAGE_JPEG_VALUE, MediaType.IMAGE_GIF_VALUE, "image/*"})
-    public ResponseEntity<byte[]> getPhoto(@PathVariable Path path) throws IOException {
+    @GetMapping(value = "{path}", produces = {MediaType.IMAGE_PNG_VALUE, MediaType.IMAGE_JPEG_VALUE, MediaType.IMAGE_GIF_VALUE, "image/*"})
+    public ResponseEntity<byte[]> getPhoto(@PathVariable String path) throws IOException {
 
 
-      /*  HttpHeaders headers = new HttpHeaders();
-        //System.err.println(path);
-        Image image = imageService.getImageObject("\\images\\user_4_avatar.jpg");
+        HttpHeaders headers = new HttpHeaders();
+        System.err.println(path);
+        Image image = imageService.getImageObject(path);
+
         headers.setContentType(MediaType.parseMediaType(image.getMediaType()));
         headers.setContentLength(image.getFileSize());
         headers.setAccessControlAllowOrigin("http://localhost:3000");
         headers.setAccessControlAllowCredentials(true);
-*/
-        //return ResponseEntity.status(200).headers(headers).body(imageService.getImageFromDisk("\\images\\user_4_avatar.jpg"));
-        return ResponseEntity.status(200).build();
 
+        return ResponseEntity.status(200).headers(headers).body(imageService.getImageFromDisk(path));
     }
 
 }
