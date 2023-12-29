@@ -36,6 +36,5 @@ public interface AdService {
     Ad deleteAd(Integer id);
     Ad pathAd(CreateOrUpdateAd ad, Integer id);
     Ads getAllAdsForUser();
-    MultipartFile pathImageAd(Integer id, MultipartFile image);
-    byte[] getImageAd(Integer id);
+    void pathImageAd(Integer id, MultipartFile image);
 }

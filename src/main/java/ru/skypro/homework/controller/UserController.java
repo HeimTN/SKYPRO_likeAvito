@@ -99,20 +99,5 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/photo")
-    public void getPhoto(@RequestParam String path, HttpServletResponse response) throws IOException {
-
-        Image photo = imageService.getImageObject(path);
-
-        response.setStatus(200);
-        response.setContentType(photo.getMediaType());
-        response.setContentLength(photo.getFileSize());
-
-        InputStream is = Files.newInputStream(Path.of(path));
-        OutputStream os = response.getOutputStream();
-
-        IOUtils.copy(is, os);
-    }
-
 }
 

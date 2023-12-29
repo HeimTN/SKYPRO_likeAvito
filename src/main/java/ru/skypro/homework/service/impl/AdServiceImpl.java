@@ -6,15 +6,19 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ru.skypro.homework.dto.*;
 import ru.skypro.homework.model.AdEntity;
+import ru.skypro.homework.model.UserEntity;
 import ru.skypro.homework.repo.AdRepository;
 import ru.skypro.homework.repo.UserRepo;
 import ru.skypro.homework.service.AdMapper;
 import ru.skypro.homework.service.AdService;
+import ru.skypro.homework.service.ImageService;
 import ru.skypro.homework.service.WebSecurityService;
+import ru.skypro.homework.util.Constants;
 import ru.skypro.homework.util.exceptions.FileNotFoundException;
 import ru.skypro.homework.util.exceptions.NotFoundException;
 
@@ -23,6 +27,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static com.datical.liquibase.ext.init.InitProjectUtil.getExtension;
 
 
 /**
@@ -61,15 +69,18 @@ public class AdServiceImpl implements AdService {
     private final UserRepo userRepository;
     private final AdMapper mapper;
     private final WebSecurityService webSecurityService;
+    private final ImageService imageService;
 
     @Value("${path.to.image.folder}")
     private String uploadDir;
 
-    public AdServiceImpl(AdRepository repository, AdMapper mapper, UserRepo userRepository, WebSecurityServiceImpl webSecurityService){
+    public AdServiceImpl(AdRepository repository, AdMapper mapper, UserRepo userRepository, WebSecurityServiceImpl webSecurityService,
+                         ImageService imageService){
         this.repository = repository;
         this.mapper = mapper;
         this.userRepository = userRepository;
         this.webSecurityService = webSecurityService;
+        this.imageService = imageService;
     }
 
 
@@ -79,6 +90,7 @@ public class AdServiceImpl implements AdService {
         if(result.isEmpty()){
             throw new NotFoundException("Обьявления не найдены");
         }
+        result.forEach(adEntity -> adEntity.setImage(Constants.IMAGES_URL + adEntity.getImage()));
         return mapper.adToDtoList(result);
     }
 
@@ -86,8 +98,13 @@ public class AdServiceImpl implements AdService {
     public Ad createAd(CreateOrUpdateAd ad, MultipartFile image) {
         AdEntity result;
         result = mapper.dtoToAd(ad);
-        result.setImage(uploadImageHandler(image));
-        result.setAuthor(userRepository.findByLogin(getMe()).get());
+        result.setAuthor(userRepository.findByLogin(getMe()).orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден")));
+        result = repository.save(result);
+        if(result == null){
+            throw new RuntimeException("Обьявление не созданно");
+        }
+        result.setImage(savePhoto(image, result.getId()));
+
         return mapper.adToDto(repository.save(result));
     }
 
@@ -97,6 +114,7 @@ public class AdServiceImpl implements AdService {
         if(result == null){
             return null;
         }
+        result.setImage(Constants.IMAGES_URL + result.getImage());
         return mapper.adToExtDto(result);
     }
 
@@ -126,66 +144,35 @@ public class AdServiceImpl implements AdService {
 
     @Override
     public Ads getAllAdsForUser() {
-        return mapper.adToDtoList(repository.findAdEntitiesByAuthor(userRepository.findByLogin(getMe()).get()));
+        Collection<AdEntity> result = repository.findAdEntitiesByAuthor(userRepository.findByLogin(getMe()).orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден")));
+        result.forEach(adEntity -> adEntity.setImage(Constants.IMAGES_URL + adEntity.getImage()));
+        return mapper.adToDtoList(result);
     }
 
     @Override
-    public MultipartFile pathImageAd(Integer id, MultipartFile image) {
-        AdEntity result = repository.findById(id).orElse(null);
-        if(result == null){
-            return null;
-        }
-        if(result.getAuthor().getLogin().equals(getMe()) || result.getAuthor().getRole().equals(Role.ADMIN)) {
-            result.setImage(uploadImageHandler(image));
-            repository.save(result);
-            return image;
-        }
-        throw new AccessDeniedException("Нет доступа");
-    }
+    public void pathImageAd(Integer id, MultipartFile image) {
+        AdEntity ad = repository.findById(id).orElseThrow(() -> new NotFoundException("Обьяфление не найдено"));
+        ad.setImage(savePhoto(image, id));
 
-    @Override
-    public byte[] getImageAd(Integer id) {
-        AdEntity result = repository.findById(id).orElse(null);
-        if(result == null){
-        return null;
+        if (ad.getImage() == null) {
+            throw new IllegalArgumentException("No new image provided. User is not saved");
         }
-        try {
-            Path path = Paths.get(result.getImage());
-            byte[] fileContent = Files.readAllBytes(path);
-            return fileContent;
-        } catch (IOException e){
-            e.printStackTrace();
-        }
-        throw new RuntimeException("Непредвиденная ошибка, проверьте стактрейс");
-
+        repository.save(ad);
     }
 
     private String getMe(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication.getName();
     }
+    public String savePhoto(MultipartFile photo, Integer id){
+        if(photo == null){
+            return null;
+        }
+        AdEntity ad = repository.findById(id).orElseThrow(() -> new NotFoundException("Обьявление не найдено"));
 
-    private String uploadImageHandler(MultipartFile image){
-        if(image.isEmpty()){
-            throw new FileNotFoundException("Изображение для загрузки не найдено");
-        }
-        try{
-            Path projectDir = Paths.get("").toAbsolutePath();
-            Path uploadPath = Paths.get(projectDir.toString(), uploadDir);
-            if(!Files.exists(uploadPath)){
-                Files.createDirectories(uploadPath);
-            }
-            try(var inputStream = image.getInputStream()){
-                Path filePath = uploadPath.resolve(image.getOriginalFilename());
-                while(Files.exists(filePath)){
-                    filePath = uploadPath.resolve(filePath.getParent()+"/"+1+filePath.getFileName());
-                }
-                Files.copy(inputStream, filePath);
-                return filePath.toString();
-            }
-        } catch (IOException e){
-            e.printStackTrace();
-        }
-        throw new RuntimeException("AdServiceImpl in uploadFileHandler: unexpected error");
+        String filePath = "ad_" + ad.getId() + "_avatar" + "." + getExtension(Objects.requireNonNull(photo.getOriginalFilename()));
+
+        imageService.uploadImage(photo, filePath);
+        return filePath;
     }
 }

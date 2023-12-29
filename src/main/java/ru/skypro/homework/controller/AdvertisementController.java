@@ -11,12 +11,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import ru.skypro.homework.dto.*;
+import ru.skypro.homework.model.AdEntity;
 import ru.skypro.homework.service.AdService;
+import ru.skypro.homework.service.ImageService;
 import ru.skypro.homework.service.impl.AuthServiceImpl;
+import ru.skypro.homework.util.exceptions.NotFoundException;
 
 
 import javax.validation.Valid;
 import java.io.IOException;
+import java.util.Objects;
 
 
 /**
@@ -29,6 +33,7 @@ import java.io.IOException;
 public class AdvertisementController {
     private static final Logger logger = LoggerFactory.getLogger(AuthServiceImpl.class);
     private final AdService adService;
+    private final ImageService imageService;
 
 
 
@@ -138,15 +143,9 @@ public class AdvertisementController {
     })
     @PatchMapping("/{id}/image")
     public ResponseEntity<byte[]> pathImageAds(@PathVariable Integer id, MultipartFile image) throws IOException {
-        byte[] imageBytes = adService.pathImageAd(id, image).getBytes();
-        if(imageBytes == null){
-            return ResponseEntity.status(404).build();
-        }
-        return ResponseEntity.ok(imageBytes);
-    }
-
-    @GetMapping(value = "/{id}/image", produces = {MediaType.IMAGE_JPEG_VALUE, MediaType.IMAGE_PNG_VALUE, MediaType.IMAGE_GIF_VALUE, "image/*"})
-    public byte[] getImage(@PathVariable Integer id){
-        return adService.getImageAd(id);
+        adService.pathImageAd(id,image);
+        Ad ad = adService.getAllAds().getResults().stream().filter(a -> Objects.equals(a.getPk(), id)).findFirst().orElseThrow(() -> new NotFoundException("Обьявление не найдено"));
+        byte[] result = imageService.getImageFromDisk(ad.getImage());
+        return ResponseEntity.ok(result);
     }
 }
