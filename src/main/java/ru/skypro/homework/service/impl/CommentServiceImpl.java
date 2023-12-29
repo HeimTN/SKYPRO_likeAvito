@@ -1,6 +1,5 @@
 package ru.skypro.homework.service.impl;
 
-import org.mapstruct.control.MappingControl;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,8 +24,7 @@ import ru.skypro.homework.util.exceptions.NotFoundException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+
 
 @Service
 public class CommentServiceImpl implements CommentService {
@@ -34,6 +32,7 @@ public class CommentServiceImpl implements CommentService {
     private final AdRepository adRepository;
     private final CommentMapper commentMapper;
     private final UserRepo userRepo;
+
 
     public CommentServiceImpl(CommentRepository commentRepository, AdRepository adRepository, CommentMapper commentMapper, UserRepo userRepo) {
         this.commentRepository = commentRepository;
