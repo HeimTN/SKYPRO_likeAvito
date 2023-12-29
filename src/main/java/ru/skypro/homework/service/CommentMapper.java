@@ -1,9 +1,11 @@
 package ru.skypro.homework.service;
-import org.mapstruct.Mapper;
 
-import ru.skypro.homework.dto.*;
+import org.mapstruct.Mapper;
+import ru.skypro.homework.dto.Comment;
+import ru.skypro.homework.dto.Comments;
 import ru.skypro.homework.model.CommentEntity;
 import ru.skypro.homework.model.UserEntity;
+import ru.skypro.homework.util.Constants;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -28,6 +30,7 @@ public interface CommentMapper {
         commentDTO.setCreatedAt(milliseconds);
         commentDTO.setText(commentEntity.getText());
         commentDTO.setPk(commentEntity.getId());
+        commentDTO.setAuthorImage(Constants.IMAGES_URL + user.getImage());
         return commentDTO;
     }
     /*method will map
