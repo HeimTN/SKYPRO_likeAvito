@@ -14,6 +14,8 @@ import ru.skypro.homework.repo.UserRepo;
 import ru.skypro.homework.util.exceptions.InCorrectPasswordException;
 import ru.skypro.homework.util.exceptions.NotFoundException;
 
+import java.util.Optional;
+
 public class CustomUserDetailsService implements UserDetailsManager {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomUserDetailsService.class);
@@ -27,7 +29,7 @@ public class CustomUserDetailsService implements UserDetailsManager {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        UserEntity user = userRepo.findByLogin(username);
+        UserEntity user = userRepo.findByLogin(username).get();
         if(user == null){
             throw new UsernameNotFoundException("Пользователь не найден");
         }
@@ -57,7 +59,7 @@ public class CustomUserDetailsService implements UserDetailsManager {
 
     @Override
     public void updateUser(UserDetails user) {
-        UserEntity updated = userRepo.findByLogin(user.getUsername());
+        UserEntity updated = userRepo.findByLogin(user.getUsername()).get();
         if(updated == null){
             throw new NotFoundException("Пользователь для обновления информации не найден");
         }
@@ -68,7 +70,7 @@ public class CustomUserDetailsService implements UserDetailsManager {
 
     @Override
     public void deleteUser(String username) {
-        UserEntity check = userRepo.findByLogin(username);
+        UserEntity check = userRepo.findByLogin(username).get();
         if(check == null){
             throw new NotFoundException("Пользователь для удаления не найден");
         }
@@ -80,7 +82,7 @@ public class CustomUserDetailsService implements UserDetailsManager {
         logger.info("Hi in CustomUserDetailsService in changePassword()");
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         logger.info("Loggin User for change password: {}", authentication.getName());
-        UserEntity update = userRepo.findByLogin(authentication.getName());
+        UserEntity update = userRepo.findByLogin(authentication.getName()).get();
         if(update == null){
             throw new NotFoundException("Пользователь для обновления информации не найден");
         }
@@ -95,7 +97,7 @@ public class CustomUserDetailsService implements UserDetailsManager {
 
     @Override
     public boolean userExists(String username) {
-        UserEntity check = userRepo.findByLogin(username);
-        return check != null;
+        Optional<UserEntity> check = userRepo.findByLogin(username);
+        return check.isPresent();
     }
 }

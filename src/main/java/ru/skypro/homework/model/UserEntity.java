@@ -17,6 +17,10 @@ public class UserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Integer id;
+
+    /**
+     * login = email
+     */
     private String login;
     private String image;
     @Column(name = "first_name")

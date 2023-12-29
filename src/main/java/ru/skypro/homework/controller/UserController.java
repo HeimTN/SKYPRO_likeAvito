@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -15,14 +16,22 @@ import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import ru.skypro.homework.dto.Image;
 import ru.skypro.homework.dto.NewPassword;
 import ru.skypro.homework.dto.UpdateUser;
 import ru.skypro.homework.dto.User;
+import ru.skypro.homework.model.ImageEntity;
+import ru.skypro.homework.service.ImageService;
 import ru.skypro.homework.service.UserService;
 import ru.skypro.homework.util.CustomUserDetailsService;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 
 @Slf4j
@@ -33,6 +42,7 @@ import java.io.IOException;
 public class UserController {
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
     private final UserService userService;
+    private final ImageService imageService;
 
 
     @Operation(summary = "Обновление пароля", description = "Метод ничего не возвращает. Принимает пароль в виде DTO и обновляет его у пользователя")
@@ -84,9 +94,24 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "Пользователь не авторизован"),
     })
     @PatchMapping(value = "/me/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> updatePhoto(MultipartFile image) throws IOException {
+    public ResponseEntity<String> updatePhoto(@RequestParam MultipartFile image) throws IOException {
         userService.updPhoto(image);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/photo")
+    public void getPhoto(@RequestParam String path, HttpServletResponse response) throws IOException {
+
+        Image photo = imageService.getImageObject(path);
+
+        response.setStatus(200);
+        response.setContentType(photo.getMediaType());
+        response.setContentLength(photo.getFileSize());
+
+        InputStream is = Files.newInputStream(Path.of(path));
+        OutputStream os = response.getOutputStream();
+
+        IOUtils.copy(is, os);
     }
 
 }

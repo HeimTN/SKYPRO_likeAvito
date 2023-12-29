@@ -54,7 +54,7 @@ public class AuthServiceImpl implements AuthService {
                         .username(register.getUsername())
                         .roles(register.getRole().name())
                         .build());
-        UserEntity user = userRepo.findByLogin(register.getUsername());
+        UserEntity user = userRepo.findByLogin(register.getUsername()).get();
         if (user == null){
             return false;
         }
