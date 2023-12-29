@@ -1,10 +1,9 @@
 package ru.skypro.homework.service.impl;
 
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.access.prepost.PostAuthorize;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -99,5 +98,10 @@ public class CommentServiceImpl implements CommentService {
         AdEntity adEntity = adRepository.findById(adId).orElseThrow(() -> new ExceptionAdNotFound("Ad was not found"));
         String username = adEntity.getAuthor().getLogin();
         return username;
+    }
+
+    public String getUserName(){
+        UserDetails user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return user.getUsername();
     }
 }
