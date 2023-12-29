@@ -8,13 +8,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Transactional;
-import ru.skypro.homework.dto.Comment;
-import ru.skypro.homework.dto.Comments;
-import ru.skypro.homework.dto.CreateOrUpdateComment;
+import ru.skypro.homework.dto.*;
 
-import ru.skypro.homework.dto.Role;
+import ru.skypro.homework.exception.ExceptionAdNotFound;
 import ru.skypro.homework.model.AdEntity;
 import ru.skypro.homework.model.CommentEntity;
+import ru.skypro.homework.model.UserEntity;
 import ru.skypro.homework.repo.AdRepository;
 import ru.skypro.homework.repo.CommentRepository;
 import ru.skypro.homework.repo.UserRepo;
@@ -25,8 +24,7 @@ import ru.skypro.homework.util.exceptions.NotFoundException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+
 
 @Service
 public class CommentServiceImpl implements CommentService {
@@ -34,6 +32,7 @@ public class CommentServiceImpl implements CommentService {
     private final AdRepository adRepository;
     private final CommentMapper commentMapper;
     private final UserRepo userRepo;
+
 
     public CommentServiceImpl(CommentRepository commentRepository, AdRepository adRepository, CommentMapper commentMapper, UserRepo userRepo) {
         this.commentRepository = commentRepository;
@@ -44,17 +43,21 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public Comments getComments(Integer id) {
-        List<CommentEntity> commentList = commentRepository.findAllByAdId(id);
-        return commentMapper.commentsToListDTO(commentList);
+        if(adRepository.findById(id).isPresent()){
+            List<CommentEntity> commentList = commentRepository.findAllByAdId(id);
+            return commentMapper.commentsToListDTO(commentList);
+        }else throw new ExceptionAdNotFound("Ad was not found");
     }
 
     @Override
-    public Comment createComment(CreateOrUpdateComment createOrUpdateComment, Integer id) {
+    public Comment createComment(CreateOrUpdateComment createOrUpdateComment, Integer id, Authentication authentication) {
         LocalDateTime now = LocalDateTime.now();
         long milliseconds = now.toInstant(ZoneOffset.UTC).toEpochMilli();
         CommentEntity commentEntity = new CommentEntity();
-        AdEntity adEntity = adRepository.findById(id).orElse(null);
-        commentEntity.setAuthor(adEntity.getAuthor());
+        AdEntity adEntity = adRepository.findById(id).orElseThrow(() -> new ExceptionAdNotFound("Ad was not found"));
+        String username = authentication.getName();
+        UserEntity userEntity = userRepo.findByLogin(username);
+        commentEntity.setAuthor(userEntity);
         commentEntity.setCreatedAt(milliseconds);
         commentEntity.setText(createOrUpdateComment.getText());
         commentEntity.setAd(adEntity);
@@ -74,14 +77,15 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    @PostAuthorize("returnObject.author == principal.username or hasRole('ADMIN')")
-    public Comment updateComment(Integer adId, Integer commentId, CreateOrUpdateComment createOrUpdateComment) {
+    public Comment updateComment(Integer adId, Integer commentId, CreateOrUpdateComment createOrUpdateComment, Authentication authentication) {
         LocalDateTime now = LocalDateTime.now();
         long milliseconds = now.toInstant(ZoneOffset.UTC).toEpochMilli();
-        CommentEntity commentEntity = commentRepository.findByAdIdAndId(adId,commentId);
-        commentEntity.setCreatedAt(milliseconds);
-        commentEntity.setText(createOrUpdateComment.getText());
-        commentRepository.save(commentEntity);
+        CommentEntity commentEntity = commentRepository.findById(commentId).orElseThrow(() -> new ExceptionAdNotFound("Comment was not found"));
+        if(commentEntity.getAuthor().getRole().equals(Role.ADMIN) || commentEntity.getAuthor().getLogin().equals(getMe())){
+            commentEntity.setText(createOrUpdateComment.getText());
+            commentEntity.setCreatedAt(milliseconds);
+            commentRepository.save(commentEntity);
+        }
         Comment comment = commentMapper.commentEntityToCommentDTO(commentEntity);
         return comment;
     }
@@ -90,5 +94,9 @@ public class CommentServiceImpl implements CommentService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication.getName();
     }
-
+    public String getUserName(Integer adId){
+        AdEntity adEntity = adRepository.findById(adId).orElseThrow(() -> new ExceptionAdNotFound("Ad was not found"));
+        String username = adEntity.getAuthor().getLogin();
+        return username;
+    }
 }

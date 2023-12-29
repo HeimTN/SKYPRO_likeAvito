@@ -56,7 +56,7 @@ public class  UserServiceImpl implements UserService {
         logger.info("Hi in UserService in updPass()");
         userDetailsManager.changePassword(newPassword.getCurrentPassword(), newPassword.getNewPassword());
     }
-    
+
     @Override
     public UpdateUser updUsr(UpdateUser updateUser) {
         int id = getMe().getId();

@@ -53,7 +53,6 @@ public class UserController {
             @ApiResponse(responseCode = "403", description = "Доступ для пользователя запрещен"),
     })
     @PostMapping("/set_password")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> updatePassword(@RequestBody @Valid NewPassword newPassword) {
         logger.info("Request change password: {}, new password: {}", newPassword.getCurrentPassword(), newPassword.getNewPassword());
         userService.updPass(newPassword);
@@ -70,7 +69,6 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "Пользователь не авторизован",
                     content = @Content(mediaType = MediaType.ALL_VALUE)),
     })
-    @PreAuthorize("isAuthenticated()")
     @GetMapping("/me")
     public ResponseEntity<User> getMe() {
         return ResponseEntity.ok(userService.getMeDTO());
@@ -85,7 +83,6 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "Пользователь отправил пароли в неверном формате"),
     })
     @PatchMapping("/me")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> updateUserInfo(@RequestBody @Valid UpdateUser updateUser) {
         userService.updUsr(updateUser);
         return ResponseEntity.ok(updateUser);
