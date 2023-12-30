@@ -17,4 +17,5 @@ The project has implemented:
 - The ability for users to leave comments under each ad.
 - Display and save images of ads, as well as user avatars.
 
-
+Technologies:
+Java, Spring, Hibernate, Spring Security
