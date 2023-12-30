@@ -10,12 +10,12 @@ Olegs team®
 - Anna Belousova
 - Anton Gorokhov
 
-The project has implemented:
+<b>The project has implemented:</b>
 - Authorization and authentication of users.
 - Distribution of roles between users: user and administrator.
 - CRUD operations for ads and comments: the administrator can delete or edit all ads and comments, and users can only edit their own.
 - The ability for users to leave comments under each ad.
 - Display and save images of ads, as well as user avatars.
 
-Technologies:
+<b>Technologies:</b>
 Java, Spring, Hibernate, Spring Security
